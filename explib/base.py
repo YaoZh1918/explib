@@ -1,5 +1,4 @@
 from abc import abstractmethod, ABCMeta
-from bunch import Bunch
 import hashlib
 import os
 import logging
@@ -109,7 +108,7 @@ class expSetting(expBase):
     def get_metrics_result(self):
         result = list()
         for metric in self.metrics:
-            result.append((metric._opts,metric.values))
+            result.append((metric._opts, metric.values))
         return result
 
 
@@ -127,14 +126,14 @@ class expProfile(expBase):
     def run(self):
         # generate file name
         opts_list = map(lambda x: x._opts,
-                   [self.dataset, self.model,
-                    self.setting] + self.metrics)
+                        [self.dataset, self.model,
+                         self.setting] + self.metrics)
         encoder = hashlib.md5()
         encoder.update(';'.join(map(str, opts_list)))
         filename = os.path.join(self.save_dir, encoder.hexdigest())
         # check existence
         if not self.overwrite and os.path.exists(filename):
-            logger.warn('%s already exists, skip.' % filename)
+            logger.warn("'%s' already exists, skip." % filename)
             return
         # run and save
         self.setting.setup(self.dataset, self.model, self.metrics)
@@ -144,9 +143,9 @@ class expProfile(expBase):
                       Setting=setting_result)
         try:
             savepkl(result, filename)
-            logger.info('%s saved.' % filename)
+            logger.info("'%s' saved." % filename)
         except IOError:
-            logger.error('IOError when saving %s' % filename)
+            logger.error("IOError when saving '%s'" % filename)
 
 
 class expEnsemble(expBase):
@@ -160,12 +159,6 @@ class expEnsemble(expBase):
         self.overwrite = overwrite
         self._n_models = 0
         self._n_datasets = 0
-        self.check_dir()
-
-    def check_dir(self):
-        if not os.path.exists(self.save_dir):
-            logger.info('%s does not exist. Creating...' % self.save_dir)
-            os.mkdir(self.save_dir)
 
     def __len__(self):
         return self._n_models * self._n_datasets
@@ -198,8 +191,10 @@ class expPool(expBase):
     def __init__(self, n_workers=2):
         self.n_workers = n_workers
         self.tasks = list()
+        self.dirs = set()
 
     def add(self, profiles):
+        self.dirs.add(profiles.save_dir)
         if isinstance(profiles, expProfile):  # single profile
             self.tasks.append([profiles])
         else:
@@ -209,6 +204,7 @@ class expPool(expBase):
         return sum(map(len, self.tasks))
 
     def run(self):
+        map(_check_dir, self.dirs)
         logger.info('# Experiments: %3d' % len(self))
         pool = Pool(self.n_workers)
         pool.map(_wrapper, enumerate(chain(*self.tasks)))
@@ -217,5 +213,14 @@ class expPool(expBase):
 def _wrapper(args):
     i, foo = args
     logger.info('Exp %3d Begins...' % i)
-    foo.run()
+    try:
+        foo.run()
+    except BaseException, e:
+        logger.error('Exp %3d: %s' % (i, e))
     logger.info('Exp %3d Done!' % i)
+
+
+def _check_dir(save_dir):
+    if not os.path.exists(save_dir):
+        logger.info("'%s' does not exist. Create it..." % save_dir)
+        os.makedirs(save_dir)

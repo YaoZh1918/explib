@@ -21,7 +21,7 @@ if 1:  # use expEnsemble to deal with large experiment
     svm_para_grid = ParamsGrid(dict(C=[.1, 1], kernel=['rbf', 'poly']))
     lr_para_grid = ParamsGrid(dict(C=[.5, 2]))
     # assemble
-    ensemble = expEnsemble('result', True)
+    ensemble = expEnsemble('result', False)
     ensemble.add_model(expModelSVM, svm_para_grid)
     ensemble.add_model(expModelLR, lr_para_grid)
     ensemble.add_dataset(expDatasetIris)
@@ -36,10 +36,8 @@ if 1:  # a simple experiment is more suitable for expProfile
     dataset = expDatasetIris()
     metrics = [expMetricAcc(), expMetricAvgF1(average='micro')]
     settings = expSettingKFold(n_splits=10)
-    profile = expProfile(dataset, model, metrics, settings, '.', True)
+    profile = expProfile(dataset, model, metrics, settings, 'result2/iris', True)
     # add to pool
     pool.add(profile)
 
 pool.run()
-
-

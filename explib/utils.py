@@ -42,7 +42,7 @@ class ParamsGrid(object):
         if len(l) == 0:
             return 0
         else:
-            return reduce(lambda x, y : x*y, l)
+            return reduce(lambda x, y: x*y, l)
 
     def __str__(self):
         name = self.__class__.__name__
@@ -60,7 +60,8 @@ class ParamsGrid(object):
             yield {}
             return
         indepen_iter = self._make_grid(self.independent_params, False)
-        depen_iters = map(lambda x: self._make_grid(x, True), self.dependent_params)
+        depen_iters = map(lambda x: self._make_grid(x, True),
+                          self.dependent_params)
         for dicts in itertools.product(indepen_iter, *depen_iters):
             para = dict()
             map(para.update, dicts)
