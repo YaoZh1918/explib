@@ -1,4 +1,7 @@
-from .expDatasetTest import expDatasetTest
+from .expDatasetIris import expDatasetIris
+from .expDatasetDigits import expDatasetDigits
 
-__all__ = ['expDatasetTest',
+
+__all__ = ['expDatasetIris',
+           'expDatasetDigits',
            ]

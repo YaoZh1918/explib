@@ -11,8 +11,12 @@ logger = logging.getLogger(__name__)
 
 class Option(object):
 
-    def __init__(self, name='empty'):
-        self.name = name
+    def __init__(self, **kwargs):
+        self.set_default()
+        self.update(**kwargs)
+
+    def set_default(self):
+        self.name = None
 
     def __str__(self):
         sorted_pairs = sorted(self.__dict__.iteritems())
@@ -100,6 +104,12 @@ class expSetting(expBase):
         """
         return
 
+    def get_metrics_result(self):
+        result = list()
+        for metric in self.metrics:
+            result.append((metric._opts,metric.values))
+        return result
+
 
 class expProfile(expBase):
 
@@ -111,19 +121,25 @@ class expProfile(expBase):
         self.save_dir = save_dir
 
     def run(self, overwrite=False):
-        if not overwrite and os.path.exists(filename):
-            logger.warn('%s already exists, skip.' % filename)
-            return
-        self.setting.setup(self.dataset, self.model, self.metrics)
-        exp_result = self.setting.run()
+        # generate file name
         opts_list = map(lambda x: x._opts,
                    [self.dataset, self.model,
-                    self.setting].extend(self.metrics))
+                    self.setting] + self.metrics)
         encoder = hashlib.md5()
         encoder.update(';'.join(map(str, opts_list)))
         filename = os.path.join(self.save_dir, encoder.hexdigest())
+        # check existence
+        if not overwrite and os.path.exists(filename):
+            logger.warn('%s already exists, skip.' % filename)
+            return
+        # run and save
+        self.setting.setup(self.dataset, self.model, self.metrics)
+        setting_result = self.setting.run()
+        metrics_result = self.setting.get_metrics_result()
+        result = dict(Options=opts_list, Metrics=metrics_result,
+                      Setting=setting_result)
         try:
-            savepkl(exp_result, 'filename')
+            savepkl(result, filename)
             logger.info('%s saved.' % filename)
         except IOError:
             logger.error('IOError when saving %s' % filename)
