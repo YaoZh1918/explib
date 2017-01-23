@@ -3,7 +3,9 @@ from bunch import Bunch
 import hashlib
 import os
 import logging
-from .utils import savepkl
+from itertools import chain, product, imap
+from multiprocessing import Pool
+from .utils import savepkl, ParamsGrid
 
 
 logger = logging.getLogger(__name__)
@@ -113,14 +115,16 @@ class expSetting(expBase):
 
 class expProfile(expBase):
 
-    def __init__(self, dataset, model, metrics, setting, save_dir):
+    def __init__(self, dataset, model, metrics, setting,
+                 save_dir, overwrite=False):
         self.dataset = dataset
         self.model = model
         self.metrics = metrics
         self.setting = setting
         self.save_dir = save_dir
+        self.overwrite = overwrite
 
-    def run(self, overwrite=False):
+    def run(self):
         # generate file name
         opts_list = map(lambda x: x._opts,
                    [self.dataset, self.model,
@@ -129,7 +133,7 @@ class expProfile(expBase):
         encoder.update(';'.join(map(str, opts_list)))
         filename = os.path.join(self.save_dir, encoder.hexdigest())
         # check existence
-        if not overwrite and os.path.exists(filename):
+        if not self.overwrite and os.path.exists(filename):
             logger.warn('%s already exists, skip.' % filename)
             return
         # run and save
@@ -143,3 +147,75 @@ class expProfile(expBase):
             logger.info('%s saved.' % filename)
         except IOError:
             logger.error('IOError when saving %s' % filename)
+
+
+class expEnsemble(expBase):
+
+    def __init__(self, save_dir, overwrite=False):
+        self.models = []
+        self.datasets = []
+        self.metrics = []
+        self.setting = None
+        self.save_dir = save_dir
+        self.overwrite = overwrite
+        self._n_models = 0
+        self._n_datasets = 0
+        self.check_dir()
+
+    def check_dir(self):
+        if not os.path.exists(self.save_dir):
+            logger.info('%s does not exist. Creating...' % self.save_dir)
+            os.mkdir(self.save_dir)
+
+    def __len__(self):
+        return self._n_models * self._n_datasets
+
+    def add_model(self, model, para_grid=ParamsGrid()):
+        self.models.append(imap(lambda para: model(**para), para_grid))
+        self._n_models += max(1, len(para_grid))
+
+    def add_dataset(self, dataset, para_grid=ParamsGrid()):
+        self.datasets.append(imap(lambda para: dataset(**para), para_grid))
+        self._n_datasets += max(1, len(para_grid))
+
+    def add_metrics(self, *args):
+        self.metrics.extend(args)
+
+    def set_setting(self, setting):
+        self.setting = setting
+
+    def __iter__(self):
+        models = chain(*self.models)
+        datasets = chain(*self.datasets)
+        for model, dataset in product(models, datasets):
+            profile = expProfile(dataset, model, self.metrics,
+                                 self.setting, self.save_dir, self.overwrite)
+            yield profile
+
+
+class expPool(expBase):
+
+    def __init__(self, n_workers=2):
+        self.n_workers = n_workers
+        self.tasks = list()
+
+    def add(self, profiles):
+        if isinstance(profiles, expProfile):  # single profile
+            self.tasks.append([profiles])
+        else:
+            self.tasks.append(profiles)
+
+    def __len__(self):
+        return sum(map(len, self.tasks))
+
+    def run(self):
+        logger.info('# Experiments: %3d' % len(self))
+        pool = Pool(self.n_workers)
+        pool.map(_wrapper, enumerate(chain(*self.tasks)))
+
+
+def _wrapper(args):
+    i, foo = args
+    logger.info('Exp %3d Begins...' % i)
+    foo.run()
+    logger.info('Exp %3d Done!' % i)
