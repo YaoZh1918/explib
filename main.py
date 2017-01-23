@@ -17,11 +17,13 @@ pool = expPool(4)
 
 if 1:  # use expEnsemble to deal with large experiment
     # declare parameters
-    digits_para_grid = ParamsGrid(dict(nb_classes=[3, 5, 10]))
-    svm_para_grid = ParamsGrid(dict(C=[.1, 1, 5], kernel=['rbf', 'poly']))
+    digits_para_grid = ParamsGrid(dict(nb_classes=[5, 10]))
+    svm_para_grid = ParamsGrid(dict(C=[.1, 1], kernel=['rbf', 'poly']))
+    lr_para_grid = ParamsGrid(dict(C=[.5, 2]))
     # assemble
     ensemble = expEnsemble('result', True)
     ensemble.add_model(expModelSVM, svm_para_grid)
+    ensemble.add_model(expModelLR, lr_para_grid)
     ensemble.add_dataset(expDatasetIris)
     ensemble.add_dataset(expDatasetDigits, digits_para_grid)
     ensemble.add_metrics(expMetricAcc(), expMetricAvgF1(average='micro'), expMetricAvgF1(average='macro'))
