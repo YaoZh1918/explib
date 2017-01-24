@@ -4,20 +4,39 @@ import os
 import logging
 from itertools import chain, product, imap
 from multiprocessing import Pool
+import ConfigParser
 from .utils import savepkl, ParamsGrid, make_summary, _check_dir
 
 
 logger = logging.getLogger(__name__)
 
+config_parser = ConfigParser.SafeConfigParser()
+config_parser.optionxform = str
+config_parser.read('explib/DefaultOption.conf')
+
+
+def getDefaultOption(name):
+    if name not in config_parser.sections():
+        logger.info('Cannot get default option of %s.' % name)
+        new_dict = dict()
+    else:
+        items = config_parser.items(name)
+        keys, values = zip(*items)
+        new_dict = dict(zip(keys, map(eval, values)))
+    # add name field
+    for possible in ['Dataset', 'Model', 'Metric', 'Setting']:
+        if name[3:].startswith(possible):
+            name = name[3 + len(possible):]
+            continue
+    new_dict['name'] = name
+    opts = Option(**new_dict)
+    return opts
+
 
 class Option(object):
 
     def __init__(self, **kwargs):
-        self.set_default()
-        self.update(**kwargs)
-
-    def set_default(self):
-        self.name = None
+        self.__dict__.update(**kwargs)
 
     def __str__(self):
         sorted_pairs = sorted(self.__dict__.iteritems())
@@ -37,15 +56,13 @@ class Option(object):
 class expBase(object):
     __metaclass__ = ABCMeta
 
-    def __init__(self):
-        self._opts = Option()
+    def __init__(self, **kwargs):
+        self._opts = getDefaultOption(self.__class__.__name__)
+        self._opts.update(**kwargs)
 
 
 class expDataset(expBase):
     __metaclass__ = ABCMeta
-
-    def __init__(self):
-        super(expDataset, self).__init__()
 
     @abstractmethod
     def load(self):
@@ -58,9 +75,6 @@ class expDataset(expBase):
 class expModel(expBase):
     __metaclass__ = ABCMeta
 
-    def __init__(self):
-        super(expModel, self).__init__()
-
     @abstractmethod
     def fit(self, data):
         """Fit model to the data
@@ -72,8 +86,8 @@ class expModel(expBase):
 class expMetric(expBase):
     __metaclass__ = ABCMeta
 
-    def __init__(self):
-        super(expMetric, self).__init__()
+    def __init__(self, **kwargs):
+        super(expMetric, self).__init__(**kwargs)
         self.values = []
 
     @abstractmethod
@@ -87,8 +101,8 @@ class expMetric(expBase):
 class expSetting(expBase):
     __metaclass__ = ABCMeta
 
-    def __init__(self):
-        super(expSetting, self).__init__()
+    def __init__(self, **kwargs):
+        super(expSetting, self).__init__(**kwargs)
         self.dataset = None
         self.model = None
         self.metrics = []

@@ -1,4 +1,4 @@
-from ..base import expDataset, Option
+from ..base import expDataset
 from bunch import Bunch
 from sklearn.datasets import load_iris
 import logging
@@ -7,16 +7,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class DatasetOption(Option):
-
-    def set_default(self):
-        self.name = 'Iris'
-
-
 class expDatasetIris(expDataset):
-
-    def __init__(self, **kwargs):
-        self._opts = DatasetOption(**kwargs)
 
     def load(self):
         logger.info('Loading Iris...')

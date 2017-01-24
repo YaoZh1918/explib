@@ -1,20 +1,9 @@
-from ..base import expSetting, Option
+from ..base import expSetting
 from sklearn.model_selection import KFold
 import numpy as np
 
 
-class SettingOption(Option):
-
-    def set_default(self):
-        self.name = 'KFold'
-        self.n_splits = 10
-
-
 class expSettingKFold(expSetting):
-
-    def __init__(self, **kwargs):
-        super(expSettingKFold, self).__init__()
-        self._opts = SettingOption(**kwargs)
 
     def run(self):
         opts = self._opts

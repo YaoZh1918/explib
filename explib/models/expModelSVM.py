@@ -1,4 +1,4 @@
-from ..base import expModel, Option
+from ..base import expModel
 from sklearn.svm import SVC
 from bunch import Bunch
 import logging
@@ -7,18 +7,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class ModelOption(Option):
-
-    def set_default(self):
-        self.name = 'SVM'
-        self.C = 1.0
-        self.kernel = 'rbf'
-
-
 class expModelSVM(expModel):
-
-    def __init__(self, **kwargs):
-        self._opts = ModelOption(**kwargs)
 
     def fit(self, data):
         opts = self._opts

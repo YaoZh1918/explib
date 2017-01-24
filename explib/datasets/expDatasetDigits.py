@@ -1,4 +1,4 @@
-from ..base import expDataset, Option
+from ..base import expDataset
 from sklearn.datasets import load_digits
 from bunch import Bunch
 import logging
@@ -7,17 +7,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class DatasetOption(Option):
-
-    def set_default(self):
-        self.name = 'Digits'
-        self.nb_classes = 10
-
-
 class expDatasetDigits(expDataset):
-
-    def __init__(self, **kwargs):
-        self._opts = DatasetOption(**kwargs)
 
     def load(self):
         opts = self._opts
