@@ -5,7 +5,7 @@ from sklearn.metrics import f1_score
 class MetricOption(Option):
 
     def set_default(self):
-        self._name = 'F1'
+        self.name = 'F1'
         self.average = 'micro'
 
 

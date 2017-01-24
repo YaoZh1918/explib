@@ -116,11 +116,12 @@ def parse_result(data, ops=['mean', 'std', 'max', 'min']):
             continue
         for k, v in opt.__dict__.iteritems():
             line['_'.join([prefix, k])] = v
+
     # Metrics
     def make_name(opt):
-        items = filter(lambda x: x[0] != '_name', opt.__dict__.items())
+        items = filter(lambda x: x[0] != 'name', opt.__dict__.items())
         s = ','.join(map(lambda x: '%s=%s' % x, items))
-        return '%s(%s)' % (opt._name, s)
+        return '%s(%s)' % (opt.name, s)
     for m_opt, arr in data['Metrics']:
         prefix = make_name(m_opt)
         for op in ops:
@@ -130,7 +131,6 @@ def parse_result(data, ops=['mean', 'std', 'max', 'min']):
         for k, v in data['Others'].iteritems():
             line['_'.join(['others', k])] = v
     return line
-
 
 
 def merge_result(dir_name, ops=['mean', 'std', 'max', 'min']):
@@ -144,9 +144,10 @@ def merge_result(dir_name, ops=['mean', 'std', 'max', 'min']):
                 filename = os.path.join(c_dir, c_file)
                 data = loadpkl(filename)
                 all_data.append(parse_result(data, ops))
-            except (IOError, EOFError, UnpicklingError), e:
+            except (IOError, EOFError, UnpicklingError):
                 logger.error('Load %s failed, pass' % filename)
     df = pd.DataFrame(all_data)
+
     # define cmp method
     def df_cmp(x, y):
         def get_level(s):
@@ -179,7 +180,8 @@ def make_summary(save_dir, result_dir, ops=['mean', 'std', 'max', 'min']):
     'ops' is a list of operations that will be applied on metrics result.
     """
     df, duplicates = merge_result(result_dir, ops)
-    prefix = '%s%s(%s)' % (strftime("[%Y-%m-%d-%H-%M-%S]"),'EXP', os.path.split(result_dir)[1])
+    prefix = '%s%s(%s)' % (strftime("[%Y-%m-%d-%H-%M-%S]"), 'EXP',
+                           os.path.basename(result_dir))
     df.to_csv('%sMain.csv' % prefix)
     if len(duplicates) > 0:
         duplicates.to_csv('%sInfo.csv' % prefix)

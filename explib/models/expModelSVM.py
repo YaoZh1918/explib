@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class ModelOption(Option):
 
     def set_default(self):
-        self._name = 'SVM'
+        self.name = 'SVM'
         self.C = 1.0
         self.kernel = 'rbf'
 

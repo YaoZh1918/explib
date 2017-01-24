@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class DatasetOption(Option):
 
     def set_default(self):
-        self._name = 'Iris'
+        self.name = 'Iris'
 
 
 class expDatasetIris(expDataset):

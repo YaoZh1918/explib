@@ -17,7 +17,7 @@ class Option(object):
         self.update(**kwargs)
 
     def set_default(self):
-        self._name = None
+        self.name = None
 
     def __str__(self):
         sorted_pairs = sorted(self.__dict__.iteritems())
@@ -224,7 +224,6 @@ class expPool(expBase):
         for dir_name in self.dirs:
             make_summary(save_dir, dir_name, ops=ops)
         logger.info('Done!')
-
 
 
 def _wrapper(args):
