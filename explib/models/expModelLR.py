@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class ModelOption(Option):
 
     def set_default(self):
-        self.name = 'LR'
+        self._name = 'LR'
         self.C = 1.0
 
 class expModelLR(expModel):

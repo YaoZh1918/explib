@@ -6,7 +6,7 @@ import numpy as np
 class SettingOption(Option):
 
     def set_default(self):
-        self.name = 'KFold'
+        self._name = 'KFold'
         self.n_splits = 10
 
 

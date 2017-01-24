@@ -4,7 +4,7 @@ import os
 import logging
 from itertools import chain, product, imap
 from multiprocessing import Pool
-from .utils import savepkl, ParamsGrid
+from .utils import savepkl, ParamsGrid, make_summary, _check_dir
 
 
 logger = logging.getLogger(__name__)
@@ -17,7 +17,7 @@ class Option(object):
         self.update(**kwargs)
 
     def set_default(self):
-        self.name = None
+        self._name = None
 
     def __str__(self):
         sorted_pairs = sorted(self.__dict__.iteritems())
@@ -123,11 +123,19 @@ class expProfile(expBase):
         self.save_dir = save_dir
         self.overwrite = overwrite
 
+    def get_options(self):
+        options = dict(dataset=self.dataset._opts,
+                       model=self.model._opts,
+                       setting=self.setting._opts,
+                       metrics=map(lambda x: x._opts, self.metrics))
+        return options
+
     def run(self):
-        # generate file name
-        opts_list = map(lambda x: x._opts,
-                        [self.dataset, self.model,
-                         self.setting] + self.metrics)
+        # merge options
+        options = self.get_options()
+        opts_list = [options[key] for key in ['dataset', 'model', 'setting']]
+        opts_list.extend(options['metrics'])
+        # hash options to get filename
         encoder = hashlib.md5()
         encoder.update(';'.join(map(str, opts_list)))
         filename = os.path.join(self.save_dir, encoder.hexdigest())
@@ -139,8 +147,8 @@ class expProfile(expBase):
         self.setting.setup(self.dataset, self.model, self.metrics)
         setting_result = self.setting.run()
         metrics_result = self.setting.get_metrics_result()
-        result = dict(Options=opts_list, Metrics=metrics_result,
-                      Setting=setting_result)
+        result = dict(Options=options, Metrics=metrics_result,
+                      Others=setting_result)
         try:
             savepkl(result, filename)
             logger.info("'%s' saved." % filename)
@@ -208,6 +216,15 @@ class expPool(expBase):
         logger.info('# Experiments: %3d' % len(self))
         pool = Pool(self.n_workers)
         pool.map(_wrapper, enumerate(chain(*self.tasks)))
+        logger.info('All Experiments are Done!')
+
+    def make_summary(self, save_dir='.', ops=['mean', 'std', 'max', 'min']):
+        logger.info('Making Summary...')
+        _check_dir(save_dir)
+        for dir_name in self.dirs:
+            make_summary(save_dir, dir_name, ops=ops)
+        logger.info('Done!')
+
 
 
 def _wrapper(args):
@@ -215,12 +232,6 @@ def _wrapper(args):
     logger.info('Exp %3d Begins...' % i)
     try:
         foo.run()
-    except BaseException, e:
-        logger.error('Exp %3d: %s' % (i, e))
+    except BaseException:
+        logger.error('Exp %3d:', exc_info=1)
     logger.info('Exp %3d Done!' % i)
-
-
-def _check_dir(save_dir):
-    if not os.path.exists(save_dir):
-        logger.info("'%s' does not exist. Create it..." % save_dir)
-        os.makedirs(save_dir)

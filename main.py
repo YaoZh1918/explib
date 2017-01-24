@@ -41,3 +41,4 @@ if 1:  # a simple experiment is more suitable for expProfile
     pool.add(profile)
 
 pool.run()
+pool.make_summary()

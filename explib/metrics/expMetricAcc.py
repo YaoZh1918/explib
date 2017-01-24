@@ -5,7 +5,7 @@ from sklearn.metrics import accuracy_score
 class MetricOption(Option):
 
     def set_default(self):
-        self.name = 'Acc'
+        self._name = 'Acc'
 
 class expMetricAcc(expMetric):
 
