@@ -171,11 +171,13 @@ class expEnsemble(expBase):
     def __len__(self):
         return self._n_models * self._n_datasets
 
-    def add_model(self, model, para_grid=ParamsGrid()):
+    def add_model(self, model, para_grid=None):
+        para_grid = para_grid or ParamsGrid()
         self.models.append(imap(lambda para: model(**para), para_grid))
         self._n_models += max(1, len(para_grid))
 
-    def add_dataset(self, dataset, para_grid=ParamsGrid()):
+    def add_dataset(self, dataset, para_grid=None):
+        para_grid = para_grid or ParamsGrid()
         self.datasets.append(imap(lambda para: dataset(**para), para_grid))
         self._n_datasets += max(1, len(para_grid))
 

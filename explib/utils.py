@@ -20,13 +20,13 @@ class ParamsGrid(object):
     """Grid of parameters.
     """
 
-    def __init__(self, params=dict()):
+    def __init__(self, params=None):
         """> __init__(self, params=dict())
         Initialize with a dict.
         Inputs:
             params: dict of string to sequence
         """
-        self.independent_params = params
+        self.independent_params = params or dict()
         self.dependent_params = list()
 
     def add(self, *args, **kwargs):
